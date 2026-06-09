@@ -1,0 +1,91 @@
+{
+  "tabLinks": [
+    {
+      "text": "Blog",
+      "classes": "resource_tab-link w-inline-block w-tab-link w--current",
+      "ariaSelected": "true"
+    },
+    {
+      "text": "E-Commerce",
+      "classes": "resource_tab-link w-inline-block w-tab-link",
+      "ariaSelected": "false"
+    },
+    {
+      "text": "Webflow",
+      "classes": "resource_tab-link w-inline-block w-tab-link",
+      "ariaSelected": "false"
+    },
+    {
+      "text": "SEO",
+      "classes": "resource_tab-link w-inline-block w-tab-link",
+      "ariaSelected": "false"
+    }
+  ],
+  "tabPanes": [
+    {
+      "id": "w-tabs-0-data-w-pane-0",
+      "classes": "resource_tab-pane w-tab-pane w--tab-active",
+      "display": "block",
+      "opacity": "1",
+      "childCount": 1
+    },
+    {
+      "id": "w-tabs-0-data-w-pane-1",
+      "classes": "resource_tab-pane w-tab-pane",
+      "display": "block",
+      "opacity": "1",
+      "childCount": 2
+    },
+    {
+      "id": "w-tabs-0-data-w-pane-2",
+      "classes": "resource_tab-pane w-tab-pane",
+      "display": "block",
+      "opacity": "1",
+      "childCount": 2
+    },
+    {
+      "id": "w-tabs-0-data-w-pane-3",
+      "classes": "resource_tab-pane w-tab-pane",
+      "display": "block",
+      "opacity": "1",
+      "childCount": 1
+    }
+  ],
+  "blobCount": 4,
+  "blobSample": [
+    {
+      "tag": "IMG",
+      "classes": "hero_blob-left-primary",
+      "display": "block",
+      "opacity": "0.8",
+      "transform": "none",
+      "position": "absolute"
+    },
+    {
+      "tag": "IMG",
+      "classes": "hero_blob-left-dark",
+      "display": "block",
+      "opacity": "1",
+      "transform": "none",
+      "position": "absolute"
+    },
+    {
+      "tag": "IMG",
+      "classes": "hero_blob-right-primary",
+      "display": "block",
+      "opacity": "1",
+      "transform": "none",
+      "position": "absolute"
+    },
+    {
+      "tag": "IMG",
+      "classes": "hero_blob-right-dark",
+      "display": "block",
+      "opacity": "1",
+      "transform": "none",
+      "position": "absolute"
+    }
+  ],
+  "heroClasses": "hero_logo-link w-nav-brand w--current",
+  "heroVisibility": "visible"
+}
