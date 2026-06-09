@@ -1,87 +1,127 @@
 # HANDOFF — sabahwebs-exact
 
-A self-contained static **clone of the live sabahwebs.com site**, hosted on GitHub Pages.
+Static site for **sabahwebs.com**, hosted on GitHub Pages. Originally a verbatim clone of the
+Webflow-served site; now the **live production site** at the custom domain, with custom features
+layered on top.
 Last updated: 2026-06-09.
 
 ---
 
 ## 1. What this is
 
-- An exact, self-hosted mirror of **https://sabahwebs.com/** (homepage + 10 blog posts).
-- The live apex `sabahwebs.com` is **still served by Webflow** — the DNS cutover to GitHub Pages never happened. This repo is an independent copy, not the production site.
-- All CSS, JS, fonts, and images are downloaded into the repo, so the site renders with **no dependency on Webflow's CDN**.
+- A self-hosted static site: **homepage (`index.html`) + 10 blog posts** under `/blog/`.
+- **It is now the production site:** `sabahwebs.com` DNS points here (GitHub Pages), HTTPS enforced.
+  Webflow is no longer in the serving path.
+- All CSS, JS, fonts, and images are bundled in the repo, so it renders with **no dependency on
+  Webflow's CDN**. Third-party scripts that must stay remote (Google reCAPTCHA, GTM, fonts) load
+  from their real `https://` origins.
 
 ## 2. Where it lives
 
 | | |
 |---|---|
 | **GitHub repo** | `fyb27/sabahwebs-exact` (public) |
-| **Live URL** | https://fyb27.github.io/sabahwebs-exact/ |
+| **Production URL** | https://sabahwebs.com (custom domain, HTTPS) |
+| **Pages URL** | https://fyb27.github.io/sabahwebs-exact/ (still works; canonical is the apex) |
 | **Local working dir** | `Z:\sites\sabahwebs happycodes\sabahwebs\mirror` (this folder **is** the git repo root) |
 | **Branch** | `main` |
-| **Size** | ~21 MB, ~160 tracked files |
 
-## 3. Layout
+## 3. Custom domain + DNS (live)
 
-```
-/index.html                         homepage (Webflow HTML, minified — single long line)
-/blog/<slug>.html                   10 blog posts (served at /blog/<slug> by Pages)
-/cdn.prod.website-files.com/...      self-hosted Webflow CSS/JS/fonts/images + chunks
-/d3e54v103j8qbb.cloudfront.net/...   jQuery
-/ajax.googleapis.com/...            Webfont loader
-/www.google.com, /www.googletagmanager.com, /analytics.ahrefs.com   3rd-party stubs
-/g0lnomhfn3.../...                   Webflow badge asset
-/.nojekyll                          tells Pages to serve files verbatim (filenames have spaces)
-/README.md, /HANDOFF.md
-```
+- **`CNAME` file** in repo root contains `sabahwebs.com` → tells Pages the canonical custom domain.
+- **GoDaddy DNS for sabahwebs.com:**
+  - `A  @  185.199.108.153 / .109 / .110 / .111` (the four GitHub Pages IPs)
+  - `CNAME  www  fyb27.github.io`
+  - Kept: NS, SOA, `_domainconnect`, `TXT @ google-site-verification=…`, `TXT _dmarc …`
+  - Removed during cutover: old parking `A @ 198.202.211.1`, the Webflow `CNAME www cdn.webflow.com`, and the stale `TXT _webflow` verification.
+- HTTPS: GitHub auto-provisioned the Let's Encrypt cert; **Enforce HTTPS** is on.
 
-> **Note:** the HTML is **minified to one line per file**. Don't try to hand-edit by eye —
-> use a script that locates the target by a unique substring or by depth-scanning `<div>`/`</div>`.
+## 4. Custom features (on top of the clone)
 
-## 4. How it was built (reproducible pipeline)
+All wired into the **minified** `index.html` (and floater into all 11 pages). Key knobs:
 
-1. **Mirror** — `wget -H -p -k -E` over the 11 URLs (homepage + 10 blog posts from sitemap.xml).
-2. **Flatten** — promote `index.html`, `blog/`, and the Webflow-badge dir out of the `sabahwebs.com/` host folder up to repo root; strip one leading `../` from references to external host dirs so paths are **relative** (work at the Pages project subpath).
-3. **Self-host gaps** — download the apple-touch-icon (`favicon webclip.png`) that wget dropped.
-4. **Webflow runtime chunks** — `webflow.<hash>.js` is a tiny webpack loader that lazy-loads `webflow.achunk.<hash>.js` files (the tabs engine + IX2 animations); wget can't follow JS imports, so all 15 chunks were extracted from the loader's `r.u` map and downloaded into the same `/js/` dir.
-5. **Strip SRI** — remove all `integrity="…"` attributes (wget rewrote `url()` paths inside the CSS, breaking the hashes → browsers blocked the stylesheet).
+- **Contact form → Formspree.** Endpoint `https://formspree.io/f/xkoabbdn`. Both forms POST to it:
+  the main contact form (`#email-form-2`) and the small footer form (`#email-form`).
+  - A capture-phase JS handler (injected before `</body>`) **overrides Webflow's form JS**
+    (`stopImmediatePropagation`), submits via `fetch` with `Accept: application/json`, and toggles
+    the existing `.w-form-done` / `.w-form-fail` blocks. Field names were cleaned to
+    `name` / `email` / `phone` / `message`.
+- **Google reCAPTCHA v2** ("I'm not a robot") on the main form.
+  - Site key: `6LekYxUtAAAAAMFlBktDLAoKui7TuBk_4tlxoLlA` (registered for `sabahwebs.com` + `www`).
+  - Secret key is held by the owner — add it in the **Formspree form settings** for true
+    server-side verification (Formspree plan permitting). Without it, the checkbox is a strong
+    client-side gate + Formspree anti-spam.
+  - `api.js` loads from `https://www.google.com/recaptcha/api.js` (the mirror had stripped the
+    protocol → 404; this was fixed). The handler blocks submit until `grecaptcha.getResponse()` is set.
+- **WhatsApp** (number `60168430891`):
+  - **Floater** `.wa-float` — green circle, bottom-right, on **all 11 pages** (`right:40px` desktop,
+    `20px` mobile).
+  - **Contact section** has an inline **"WhatsApp us"** button (see §5).
+- **Blog tab capped to 3 + "View all" toggle.** Resources → Blog (`data-w-tab="Tab 1"`) shows 3 cards;
+  CSS `#blog-limit` hides `:nth-child(n+4)` unless `.blog_grid.show-all` is set; a client-side
+  **"View all blogs"** button (built in JS only when >3 posts) toggles `show-all` ⇄ "Show less".
+- **Form input font fixed** — single-line contact inputs were `Jetbrainsmono`; switched to the page
+  font **`Circe`** in the homepage CSS.
 
-## 5. Customizations made on top of the exact clone
+## 5. Contact section structure (homepage)
 
-In commit order (newest first):
+`<section class="section_contact">` → `.contact_form-component` is now a **single centered column**
+(`grid-template-columns:1fr`, max-width ~620px; see inline `#contact-stack-style`). Vertical order:
 
-| Commit | Change |
-|---|---|
-| `d2376ec` | **Removed the E-Commerce tab** from the Resources section (tabs now Blog · Webflow · SEO). |
-| `f12cfd0` | Rewrote the 3 service cards with client copy; added a **wrench+gear** maintenance icon (`/cdn.prod.website-files.com/6562ebb5332c7603e8b85f32/wrench-gear.svg`, color `#AEDEFF`). |
-| `59a8921` | **Trimmed Services from 6 cards to 3** (Web Design · SEO Optimization · Website Maintenance); removed Web Development, E-Commerce, Site Migration, Content Writing. |
-| `1734d8b` | **Repointed header nav** from `https://www.sabahwebs.com/#section` to local targets: homepage uses `#section`; blog pages use `../index.html#section`; logo → `index.html`. SEO meta tags left absolute. |
-| `174dab9` | Removed SRI integrity attributes (see step 5). |
-| `64f62c4` | Added Webflow runtime chunks (see step 4). |
-| `5d0a18b` | Initial exact static clone. |
+1. `<h2 class="contact_form-heading">Contact us!</h2>`
+2. `<p class="contact_lead">Send us a whatsapp, and we'll be right with you!</p>`
+3. **WhatsApp us** button → `wa.me/60168430891` (`.contact_whatsapp-btn`)
+4. `<p class="contact_lead contact_lead-or">Or send us an email from the form below!</p>`
+5. The email form (`#email-form-2`: name, email, phone, message, reCAPTCHA, Submit) + `.w-form-done`/`.w-form-fail`.
 
-### Key DOM anchors (homepage `index.html`)
-- Services grid: `<div class="services_grid">` … 3 × `.services_grid-item` (node IDs `_74aa9d56` / `e3126f29` / `_38f2a5ba`; accents `is-design` / `is-seo` / `is-maintenance`). Desktop grid is 3 columns, auto-flow.
-- Resources tabs: `.resource_tab-link` with `data-w-tab="Tab 1|3|4"` (Tab 2 was E-Commerce, now deleted). **Only Tab 1 (Blog) has a content pane**; Webflow/SEO tabs were empty on the original site too.
-- Homepage section IDs used by nav: `#projects`, `#services`, `#resources`, `#faq`, `#contact-form`.
+The old two-column layout and right-side image/WhatsApp panel were removed. A header WhatsApp icon was
+tried and then **removed** (redundant with the floater).
 
-## 6. Deploy / workflow
+### Other DOM anchors
+- Header nav button: `<a href="#contact-form" class="button is-secondary w-button">Get in touch</a>` inside `.nav-button-wrapper` (blog pages use `../index.html#contact-form`).
+- Section IDs used by nav: `#projects`, `#services`, `#resources`, `#faq`, `#contact-form`.
+- Services grid: 3 × `.services_grid-item` (`is-design` / `is-seo` / `is-maintenance`).
+- Resources tabs: `.resource_tab-link` `data-w-tab="Tab 1|3|4"` (Blog · Webflow · SEO). Only **Tab 1 (Blog)** has a content pane.
+- FAQ "How do I get started" answer now leads with WhatsApp + email links.
 
-- **Push to `main` → GitHub Pages auto-rebuilds** (~1–2 min). No build step; static files served as-is (`.nojekyll`).
-- Verify live with `curl` against `https://fyb27.github.io/sabahwebs-exact/...` after a rebuild.
-- For visual checks, the `seo-visual` agent (headless Playwright) was used; its `screenshots/` and `scripts/` scratch dirs are **gitignored** — delete them from disk after use.
-- GitHub auth on this machine: account **`fyb27`** via **Git Credential Manager** (no `gh` CLI, no `GITHUB_TOKEN` env). `git push` over HTTPS just works. For REST API (create repo, enable Pages), pull the token from GCM in PowerShell.
+## 6. Working on this repo
 
-## 7. Known limitations / not done
+> **The HTML is minified to one line per file.** Don't hand-edit by eye. Locate the target by a
+> unique substring and edit with a script (PowerShell `[regex]`/`.Replace` on
+> `[IO.File]::ReadAllText`/`WriteAllText` with `UTF8Encoding($false)` — no BOM). Keep `<div>` balanced.
+> Injected blocks use stable IDs (`#blog-limit`, `#contact-stack-style`, `#contact-cta-style`,
+> `#contact-panel-style`) so edits are idempotent.
 
-- **Contact form returns HTTP 405** — a Webflow form needs Webflow's backend to process submissions; a static host can't. Wire it to a service like Formspree if a working form is needed.
-- **`<link rel="canonical">` is relative** (`index.html`) — wget's link-converter did this. Harmless for the clone; set to an absolute URL if this is ever made canonical.
-- **Webflow / SEO resource tabs are empty** — same as the original live site (only the Blog tab has cards).
-- Benign console noise: `srcset` descriptor warnings, and 405s on the form/analytics endpoints.
-- Still on the `github.io` URL — **no custom domain** attached (by request).
+### Preview-before-push workflow (standing preference)
+The owner reviews changes **locally before any push**. Do not push until approved.
+1. Edit files in `mirror`, **don't push**.
+2. Serve locally: from the mirror dir run `python -m http.server 8000` (Python and Node both installed)
+   → owner opens **http://localhost:8000** (hard-refresh Ctrl+F5).
+3. Push only after they say go.
 
-## 8. Common next tasks
+reCAPTCHA + Formspree both work over `http://localhost`, so the preview is high-fidelity.
 
-- Attach a custom domain (add domain in Pages settings + `CNAME` file + DNS A records `185.199.108–111.153`).
-- Make the contact form work (Formspree).
-- Edit content: locate the target by unique substring in the minified HTML; keep `<div>`/`</div>` balanced; push and re-verify live.
+### Deploy
+- **Push to `main` → Pages auto-rebuilds** (~1 min). No build step (`.nojekyll`, served as-is).
+- Verify live against `https://sabahwebs.com/...` after the rebuild.
+- GitHub auth: account **`fyb27`** via **Git Credential Manager** (no `gh` CLI / `GITHUB_TOKEN`).
+  `git push` over HTTPS just works.
+- Commit messages: avoid raw `"` quotes (PowerShell here-string passing to `git -m` can split on them).
+
+## 7. Build pipeline (how the original clone was made — for reference)
+
+1. **Mirror** — `wget -H -p -k -E` over the 11 URLs (homepage + 10 blog posts from `sitemap.xml`).
+2. **Flatten** — promote `index.html`, `blog/`, badge dir to repo root; strip one leading `../` so
+   paths are relative.
+3. **Webflow runtime chunks** — `webflow.<hash>.js` lazy-loads 15 `webflow.achunk.<hash>.js` files
+   (tabs + IX2 animations); extracted from the loader's `r.u` map and downloaded into `/js/`.
+4. **Strip SRI** — removed all `integrity="…"` (wget rewrote `url()` paths in CSS, breaking hashes).
+
+## 8. Known limitations / watch-outs
+
+- **reCAPTCHA secret** not yet confirmed inside Formspree — verify in the Formspree dashboard for true
+  server-side token validation.
+- **Webflow / SEO resource tabs are empty** — same as the original live site (only Blog has cards).
+- Benign console noise: `srcset` descriptor warnings.
+- The owner's reCAPTCHA **secret key was shared in chat** once — consider regenerating the key pair and
+  swapping the site key if being cautious (low urgency).
