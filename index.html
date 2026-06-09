@@ -282,4 +282,31 @@ margin: 0rem !important;
 .wa-float:hover{transform:scale(1.08);box-shadow:0 6px 20px rgba(0,0,0,.32);}
 .wa-float svg{width:34px;height:34px;display:block;}
 @media(max-width:479px){.wa-float{width:54px;height:54px;right:16px;bottom:16px;}.wa-float svg{width:30px;height:30px;}}
-</style><style id="blog-limit">.resource_tab-pane .blog_grid .collection-list>.w-dyn-item:nth-child(n+4){display:none}</style></body></html>
+</style><style id="blog-limit">.resource_tab-pane .blog_grid:not(.show-all) .collection-list>.w-dyn-item:nth-child(n+4){display:none}.blog_viewall-wrap{display:flex;justify-content:center;margin-top:1.75rem}</style>
+<script>
+// Blog tab: show 3 by default, "View all" reveals the rest in place.
+(function(){
+  function init(){
+    var grid = document.querySelector('.resource_tab-pane .blog_grid') || document.querySelector('.blog_grid');
+    if(!grid) return;
+    var items = grid.querySelectorAll('.collection-list > .w-dyn-item');
+    if(items.length <= 3) return;
+    if(grid.parentNode.querySelector('.blog_viewall-wrap')) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'blog_viewall-wrap';
+    var btn = document.createElement('a');
+    btn.href = '#';
+    btn.className = 'button w-button';
+    btn.textContent = 'View all blogs';
+    wrap.appendChild(btn);
+    grid.parentNode.insertBefore(wrap, grid.nextSibling);
+    btn.addEventListener('click', function(e){
+      e.preventDefault();
+      var open = grid.classList.toggle('show-all');
+      btn.textContent = open ? 'Show less' : 'View all blogs';
+    });
+  }
+  if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', init); }
+  else { init(); }
+})();
+</script></body></html>
